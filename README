@@ -1,164 +1,189 @@
 NAME
-    Catalyst::Controller::CGIBin - Serve CGIs from root/cgi-bin
+
+    Catalyst::Controller::WrapCGI - Run CGIs in Catalyst
 
 SYNOPSIS
-    In your controller:
 
         package MyApp::Controller::Foo;
+    
+        use parent qw/Catalyst::Controller::WrapCGI/;
+        use CGI ();
+    
+        sub hello : Path('cgi-bin/hello.cgi') {
+            my ($self, $c) = @_;
+    
+            $self->cgi_to_response($c, sub {
+                my $q = CGI->new;
+                print $q->header, $q->start_html('Hello'),
+                    $q->h1('Catalyst Rocks!'),
+                    $q->end_html;
+            });
+        }
 
-        use parent qw/Catalyst::Controller::CGIBin/;
-
-    In your .conf:
+    In your .conf, configure which environment variables to pass:
 
         <Controller::Foo>
-            cgi_root_path    cgi-bin
-            cgi_dir          cgi-bin
-            cgi_chain_root   /optional/private/path/to/Chained/root
-            cgi_file_pattern *.cgi
-            # or regex
-            cgi_file_pattern /\.pl\z/
             <CGI>
                 username_field username # used for REMOTE_USER env var
                 pass_env PERL5LIB
                 pass_env PATH
                 pass_env /^MYAPP_/
+                kill_env MYAPP_BAD
             </CGI>
         </Controller::Foo>
 
 DESCRIPTION
-    Dispatches to CGI files in root/cgi-bin for /cgi-bin/ paths.
 
-    Unlike ModPerl::Registry this module does _NOT_ stat and recompile the
-    CGI for every invocation. This may be supported in the future if there's
-    interest.
+    Allows you to run Perl code in a CGI environment derived from your
+    Catalyst context.
 
-    CGI paths are converted into action names using "cgi_action".
+    *WARNING*: do not export CGI functions into a Controller, it will break
+    with Catalyst 5.8 onward.
 
-    Inherits from Catalyst::Controller::WrapCGI, see the documentation for
-    that module for other configuration information.
+    If you just want to run CGIs from files, see
+    Catalyst::Controller::CGIBin.
 
-CONFIG PARAMS
-  cgi_root_path
-    The global URI path prefix for CGIs, defaults to "cgi-bin".
+    REMOTE_USER will be set to $c->user->obj->$username_field if available,
+    or to $c->req->remote_user otherwise.
 
-  cgi_chain_root
-    By default Path actions are created for CGIs, but if you specify this
-    option, the actions will be created as Chained end-points, chaining off
-    the specified private path.
+CONFIGURATION
 
-    If this option is used, the "cgi_root_path" option is ignored. The root
-    path will be determined by your chain.
+ pass_env
 
-    The PathPart of the action will be the path to the CGI file.
+    $your_controller->{CGI}{pass_env} should be an array of environment
+    variables or regular expressions to pass through to your CGIs. Entries
+    surrounded by / characters are considered regular expressions.
 
-  cgi_dir
-    Path from which to read CGI files. Can be relative to "$MYAPP_HOME/root"
-    or absolute. Defaults to "$MYAPP_HOME/root/cgi-bin".
+ kill_env
 
-  cgi_file_pattern
-    By default all files in "cgi_dir" will be loaded as CGIs, however, with
-    this option you can specify either a glob or a regex to match the names
-    of files you want to be loaded.
+    $your_controller->{CGI}{kill_env} should be an array of environment
+    variables or regular expressions to remove from the environment before
+    passing it to your CGIs. Entries surrounded by / characters are
+    considered regular expressions.
 
-    Can be an array of globs/regexes as well.
+    Default is to pass the whole of %ENV, except for entries listed in
+    "FILTERED ENVIRONMENT" below.
+
+ username_field
+
+    $your_controller->{CGI}{username_field} should be the field for your
+    user's name, which will be read from $c->user->obj. Defaults to
+    'username'.
+
+    See "SYNOPSIS" for an example.
 
 METHODS
-  cgi_action
-    "$self->cgi_action($cgi)"
 
-    Takes a path to a CGI from "root/cgi-bin" such as "foo/bar.cgi" and
-    returns the action name it is registered as.
+ cgi_to_response
 
-  cgi_path
-    "$self->cgi_path($cgi)"
+    $self->cgi_to_response($c, $coderef)
 
-    Takes a path to a CGI from "root/cgi-bin" such as "foo/bar.cgi" and
-    returns the public path it should be registered under.
+    Does the magic of running $coderef in a CGI environment, and populating
+    the appropriate parts of your Catalyst context with the results.
 
-    The default is to prefix with "$cgi_root_path/", using the
-    "cgi_root_path" config setting, above.
+    Calls "wrap_cgi".
 
-  is_perl_cgi
-    "$self->is_perl_cgi($path)"
+ wrap_cgi
 
-    Tries to figure out whether the CGI is Perl or not.
+    $self->wrap_cgi($c, $coderef)
 
-    If it's Perl, it will be inlined into a sub instead of being forked off,
-    see "wrap_perl_cgi".
+    Runs $coderef in a CGI environment using HTTP::Request::AsCGI, returns
+    an HTTP::Response.
 
-  wrap_perl_cgi
-    "$self->wrap_perl_cgi($path, $action_name)"
+    The CGI environment is set up based on $c.
 
-    Takes the path to a Perl CGI and returns a coderef suitable for passing
-    to cgi_to_response (from Catalyst::Controller::WrapCGI) using
-    CGI::Compile.
+    The environment variables to pass on are taken from the configuration
+    for your Controller, see "SYNOPSIS" for an example. If you don't supply
+    a list of environment variables to pass, the whole of %ENV is used
+    (with exceptions listed in "FILTERED ENVIRONMENT".
 
-    $action_name is the generated name for the action representing the CGI
-    file from "cgi_action".
+    Used by "cgi_to_response", which is probably what you want to use as
+    well.
 
-    This is similar to how ModPerl::Registry works, but will only work for
-    well-written CGIs. Otherwise, you may have to override this method to do
-    something more involved (see ModPerl::PerlRun.)
+FILTERED ENVIRONMENT
 
-    Scripts with "__DATA__" sections now work too, as well as scripts that
-    call "exit()".
+    If you don't use the "pass_env" option to restrict which environment
+    variables are passed in, the default is to pass the whole of %ENV
+    except the variables listed below.
 
-  cgi_package
-    "$self->cgi_package($action_name)"
+      MOD_PERL
+      SERVER_SOFTWARE
+      SERVER_NAME
+      GATEWAY_INTERFACE
+      SERVER_PROTOCOL
+      SERVER_PORT
+      REQUEST_METHOD
+      PATH_INFO
+      PATH_TRANSLATED
+      SCRIPT_NAME
+      QUERY_STRING
+      REMOTE_HOST
+      REMOTE_ADDR
+      AUTH_TYPE
+      REMOTE_USER
+      REMOTE_IDENT
+      CONTENT_TYPE
+      CONTENT_LENGTH
+      HTTP_ACCEPT
+      HTTP_USER_AGENT
 
-    Returns the package name a Perl CGI is compiled into for a given
-    $action_name.
+    %ENV can be further trimmed using "kill_env".
 
-  wrap_nonperl_cgi
-    "$self->wrap_nonperl_cgi($path, $action_name)"
+DIRECT SOCKET/NPH SCRIPTS
 
-    Takes the path to a non-Perl CGI and returns a coderef for executing it.
+    This currently won't work:
 
-    $action_name is the generated name for the action representing the CGI
-    file.
+        #!/usr/bin/perl
+    
+        use CGI ':standard';
+    
+        $| = 1;
+    
+        print header;
+    
+        for (0..1000) {
+            print $_, br, "\n";
+            sleep 1;
+        }
 
-    By default returns something like:
+    because the coderef is executed synchronously with STDOUT pointing to a
+    temp file.
 
-        sub { system $path }
+ACKNOWLEDGEMENTS
+
+    Original development sponsored by http://www.altinity.com/
 
 SEE ALSO
-    Catalyst::Controller::WrapCGI, CatalystX::GlobalContext,
-    Catalyst::Controller, CGI, CGI::Compile, Catalyst
+
+    Catalyst::Controller::CGIBin, CatalystX::GlobalContext,
+    Catalyst::Controller, CGI, Catalyst
 
 BUGS
+
     Please report any bugs or feature requests to
-    "bug-catalyst-controller-wrapcgi at rt.cpan.org", or through the web
+    bug-catalyst-controller-wrapcgi at rt.cpan.org, or through the web
     interface at
-    <http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Catalyst-Controller-Wrap
-    CGI>. I will be notified, and then you'll automatically be notified of
+    http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Catalyst-Controller-WrapCGI.
+    I will be notified, and then you'll automatically be notified of
     progress on your bug as I make changes.
 
-SUPPORT
-    More information at:
-
-    *   RT: CPAN's request tracker
-
-        <http://rt.cpan.org/NoAuth/Bugs.html?Dist=Catalyst-Controller-WrapCG
-        I>
-
-    *   AnnoCPAN: Annotated CPAN documentation
-
-        <http://annocpan.org/dist/Catalyst-Controller-WrapCGI>
-
-    *   CPAN Ratings
-
-        <http://cpanratings.perl.org/d/Catalyst-Controller-WrapCGI>
-
-    *   Search CPAN
-
-        <http://search.cpan.org/dist/Catalyst-Controller-WrapCGI>
-
 AUTHOR
-    See "AUTHOR" in Catalyst::Controller::WrapCGI and "CONTRIBUTORS" in
-    Catalyst::Controller::WrapCGI.
+
+    Matt S. Trout <mst at shadowcat.co.uk>
+
+CONTRIBUTORS
+
+    Caelum: Rafael Kitover <rkitover@cpan.org>
+
+    confound: Hans Dieter Pearcey <hdp@cpan.org>
+
+    rbuels: Robert Buels <rbuels@gmail.com>
+
+    Some code stolen from Tatsuhiko Miyagawa's CGI::Compile.
 
 COPYRIGHT & LICENSE
-    Copyright (c) 2008-2009 "AUTHOR" in Catalyst::Controller::WrapCGI and
+
+    Copyright (c) 2008-2015 "AUTHOR" in Catalyst::Controller::WrapCGI and
     "CONTRIBUTORS" in Catalyst::Controller::WrapCGI.
 
     This program is free software; you can redistribute it and/or modify it

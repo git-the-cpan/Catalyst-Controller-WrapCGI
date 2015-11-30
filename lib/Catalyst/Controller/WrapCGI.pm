@@ -1,5 +1,7 @@
+use utf8;
 package Catalyst::Controller::WrapCGI;
-
+our $AUTHORITY = 'cpan:RKITOVER';
+$Catalyst::Controller::WrapCGI::VERSION = '0.036';
 use 5.008_001;
 use Moose;
 use mro 'c3';
@@ -18,10 +20,6 @@ use namespace::clean -except => 'meta';
 =head1 NAME
 
 Catalyst::Controller::WrapCGI - Run CGIs in Catalyst
-
-=cut
-
-our $VERSION = '0.035';
 
 =head1 SYNOPSIS
 
@@ -161,6 +159,7 @@ sub wrap_cgi {
   $req->content_type($c->req->content_type); # set this now so we can override
 
   if ($body) { # Slurp from body filehandle
+    seek $body, 0, 0;
     local $/; $body_content = <$body>;
   } else {
     my $body_params = $c->req->body_parameters || {};
@@ -358,30 +357,6 @@ L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Catalyst-Controller-WrapCGI>.
 I will be notified, and then you'll automatically be notified of progress on
 your bug as I make changes.
 
-=head1 SUPPORT
-
-More information at:
-
-=over 4
-
-=item * RT: CPAN's request tracker
-
-L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=Catalyst-Controller-WrapCGI>
-
-=item * AnnoCPAN: Annotated CPAN documentation
-
-L<http://annocpan.org/dist/Catalyst-Controller-WrapCGI>
-
-=item * CPAN Ratings
-
-L<http://cpanratings.perl.org/d/Catalyst-Controller-WrapCGI>
-
-=item * Search CPAN
-
-L<http://search.cpan.org/dist/Catalyst-Controller-WrapCGI>
-
-=back
-
 =head1 AUTHOR
 
 Matt S. Trout C<< <mst at shadowcat.co.uk> >>
@@ -398,7 +373,7 @@ Some code stolen from Tatsuhiko Miyagawa's L<CGI::Compile>.
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright (c) 2008-2009 L<Catalyst::Controller::WrapCGI/AUTHOR> and
+Copyright (c) 2008-2015 L<Catalyst::Controller::WrapCGI/AUTHOR> and
 L<Catalyst::Controller::WrapCGI/CONTRIBUTORS>.
 
 This program is free software; you can redistribute it and/or modify it
@@ -406,6 +381,6 @@ under the same terms as Perl itself.
 
 =cut
 
-1; # End of Catalyst::Controller::WrapCGI
+__PACKAGE__; # End of Catalyst::Controller::WrapCGI
 
 # vim: expandtab shiftwidth=2 ts=2 tw=80:
