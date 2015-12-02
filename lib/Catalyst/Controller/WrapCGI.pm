@@ -1,7 +1,7 @@
 use utf8;
 package Catalyst::Controller::WrapCGI;
 our $AUTHORITY = 'cpan:RKITOVER';
-$Catalyst::Controller::WrapCGI::VERSION = '0.036';
+$Catalyst::Controller::WrapCGI::VERSION = '0.037';
 use 5.008_001;
 use Moose;
 use mro 'c3';
@@ -161,6 +161,7 @@ sub wrap_cgi {
   if ($body) { # Slurp from body filehandle
     seek $body, 0, 0;
     local $/; $body_content = <$body>;
+    seek $body, 0, 0; # reset for anyone else down the chain
   } else {
     my $body_params = $c->req->body_parameters || {};
 

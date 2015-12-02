@@ -63,5 +63,5 @@ resources:
   homepage: http://metacpan.org/release/Catalyst-Controller-WrapCGI
   license: http://dev.perl.org/licenses/
   repository: git://github.com/rkitover/catalyst-controller-wrapcgi.git
-version: '0.036'
+version: '0.037'
 x_authority: cpan:RKITOVER
