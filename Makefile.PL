@@ -47,7 +47,7 @@ my %WriteMakefileArgs = (
     "warnings" => 0
   },
   "TEST_REQUIRES" => {
-    "CGI" => 0,
+    "CGI" => "3.31",
     "Catalyst" => 0,
     "Catalyst::Plugin::Static::Simple" => 0,
     "Catalyst::Runtime" => 0,
@@ -61,7 +61,7 @@ my %WriteMakefileArgs = (
     "blib" => "1.01",
     "lib" => 0
   },
-  "VERSION" => "0.037",
+  "VERSION" => "0.038",
   "test" => {
     "TESTS" => "t/*.t"
   }
@@ -69,7 +69,7 @@ my %WriteMakefileArgs = (
 
 
 my %FallbackPrereqs = (
-  "CGI" => 0,
+  "CGI" => "3.31",
   "CGI::Compile" => 0,
   "Catalyst" => 0,
   "Catalyst::Controller" => 0,

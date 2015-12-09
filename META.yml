@@ -3,7 +3,7 @@ abstract: 'Run CGIs in Catalyst'
 author:
   - 'Matt S. Trout <mst@@shadowcat.co.uk>'
 build_requires:
-  CGI: '0'
+  CGI: '3.31'
   Catalyst: '0'
   Catalyst::Plugin::Static::Simple: '0'
   Catalyst::Runtime: '0'
@@ -63,5 +63,5 @@ resources:
   homepage: http://metacpan.org/release/Catalyst-Controller-WrapCGI
   license: http://dev.perl.org/licenses/
   repository: git://github.com/rkitover/catalyst-controller-wrapcgi.git
-version: '0.037'
+version: '0.038'
 x_authority: cpan:RKITOVER
